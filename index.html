@@ -12,9 +12,13 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; color: #111; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #fff; color: #111;
+      display: flex; justify-content: center;
+    }
 
-    .page { display: flex; min-height: 100vh; }
+    .page { display: flex; min-height: 100vh; width: 100%; max-width: 1700px; }
 
     .viewer-panel {
       flex: 0 0 56%;
@@ -125,6 +129,39 @@
       color: #aaa; cursor: pointer; padding: 2px; line-height: 1;
     }
     #dialog-close:hover { color: #111; }
+
+    /* ── 27-inch / large display ── */
+    @media (min-width: 1440px) {
+      .info-panel { padding: 64px 56px 64px 52px; }
+      .product-name { font-size: 34px; }
+      .product-price { font-size: 27px; }
+      .section-eyebrow { font-size: 11px; margin-bottom: 18px; }
+      .sub-label { font-size: 13px; margin-bottom: 11px; }
+      .divider { margin: 26px 0; }
+      .section-group { margin-bottom: 28px; }
+      .sub-section { margin-bottom: 18px; }
+      .swatch { width: 28px; height: 28px; }
+      .qty-label { font-size: 13px; }
+      .qty-btn { width: 46px; height: 46px; font-size: 18px; }
+      .qty-value { width: 50px; font-size: 15px; line-height: 46px; }
+      .btn-cart { padding: 17px 20px; font-size: 14px; }
+      #dialog-bubble { font-size: 14px; width: 290px; }
+    }
+
+    @media (min-width: 1920px) {
+      .info-panel { padding: 72px 68px 72px 60px; }
+      .product-name { font-size: 38px; }
+      .product-price { font-size: 30px; }
+      .section-eyebrow { font-size: 12px; margin-bottom: 20px; }
+      .sub-label { font-size: 14px; margin-bottom: 12px; }
+      .divider { margin: 30px 0; }
+      .section-group { margin-bottom: 32px; }
+      .swatch { width: 30px; height: 30px; }
+      .swatches { gap: 8px; }
+      .qty-btn { width: 48px; height: 48px; }
+      .qty-value { width: 54px; font-size: 15px; line-height: 48px; }
+      .btn-cart { padding: 18px 20px; font-size: 14px; border-radius: 12px; }
+    }
 
     @media (max-width: 780px) {
       .page { flex-direction: column; }
@@ -318,6 +355,7 @@ const currentSwimColors = {
   primary:   PALETTES.swimsuit[DEFAULTS.swimPrimary].hex,
   secondary: PALETTES.swimsuit[DEFAULTS.swimSecondary].hex,
 };
+let currentHairColor = PALETTES.hair[DEFAULTS.hair].hex;
 
 function isReddish(hex) {
   const r = parseInt(hex.slice(1,3), 16);
@@ -353,12 +391,25 @@ function setFaceTexture(which) {
   });
 }
 
-function checkUglyCombo() {
+// showDialogFor: 'hair' | 'swimsuit' — 只在触发来源匹配时弹对话框，避免重复弹出
+function evaluateFaceState(showDialogFor) {
+  // 头发颜色优先级最高
+  if (currentHairColor === '#F472B6') {
+    setFaceTexture('disgusted');
+    if (showDialogFor === 'hair') showDollDialog("You know what... I actually dislike barbie pink.");
+    return;
+  }
+  if (currentHairColor === '#EF4444') {
+    setFaceTexture('disgusted');
+    if (showDialogFor === 'hair') showDollDialog("This is too much.");
+    return;
+  }
+  // 泳衣撞色检测
   const p = currentSwimColors.primary;
   const s = currentSwimColors.secondary;
   const isChristmas = (isReddish(p) && isGreenish(s)) || (isGreenish(p) && isReddish(s));
   if (isChristmas) {
-    showDollDialog("I don't accept this color matching, not even Christmas. 🎄");
+    if (showDialogFor === 'swimsuit') showDollDialog("I don't accept this color matching, not even Christmas. 🎄");
     setFaceTexture('disgusted');
   } else {
     setFaceTexture('normal');
@@ -532,14 +583,14 @@ function setSwimsuitPrimary(hex) {
   swimUniforms.uColor1.value.set(hex);
   document.getElementById('dot-sw-primary').style.background = hex;
   currentSwimColors.primary = hex;
-  checkUglyCombo();
+  evaluateFaceState('swimsuit');
 }
 
 function setSwimsuitSecondary(hex) {
   swimUniforms.uColor2.value.set(hex);
   document.getElementById('dot-sw-secondary').style.background = hex;
   currentSwimColors.secondary = hex;
-  checkUglyCombo();
+  evaluateFaceState('swimsuit');
 }
 
 function applyDefaultColors() {
@@ -585,7 +636,7 @@ function buildSwatches(id, palette, onChange, defaultIdx, dotId) {
   }
 }
 
-buildSwatches('hair-swatches',         PALETTES.hair,     (h) => setColor('Hair.1001', h), DEFAULTS.hair,          'dot-hair');
+buildSwatches('hair-swatches',         PALETTES.hair,     (h) => { setColor('Hair.1001', h); currentHairColor = h; evaluateFaceState('hair'); }, DEFAULTS.hair, 'dot-hair');
 buildSwatches('sw-primary-swatches',   PALETTES.swimsuit, (h) => setSwimsuitPrimary(h),    DEFAULTS.swimPrimary,   'dot-sw-primary');
 buildSwatches('sw-secondary-swatches', PALETTES.swimsuit, (h) => setSwimsuitSecondary(h),  DEFAULTS.swimSecondary, 'dot-sw-secondary');
 buildSwatches('glasses-swatches',      PALETTES.glasses,  (h) => setColor('Glasses', h),   DEFAULTS.glasses,       'dot-glasses');
