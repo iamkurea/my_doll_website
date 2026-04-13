@@ -348,6 +348,80 @@ const DEFAULTS = {
 
 
 /* ═══════════════════════════════════════
+   💬  对话台词表
+   ═══════════════════════════════════════ */
+
+const DIALOGS = {
+  hair: {
+    'Blonde':   "Classic blonde. I can work with this.",
+    'Platinum': "Ice-cold platinum — very chic.",
+    'Auburn':   "Warm and a little wild. I like it.",
+    'Black':    "Sleek. Sharp. I approve.",
+    'Pink':     "You know what… I actually dislike barbie pink.",
+    'Lavender': "Lavender hair? Very dreamy.",
+    'Blue':     "Bold! Makes me feel like a mermaid.",
+    'Red':      "This is too much.",
+  },
+  swimPrimary: {
+    'White':  "Fresh start — blank canvas.",
+    'Cream':  "Cream is so underrated.",
+    'Blush':  "Blushing suits me, doesn't it?",
+    'Red':    "Hot! But let's keep the secondary safe.",
+    'Cobalt': "Cobalt — very French Riviera.",
+    'Navy':   "Navy always means business.",
+    'Sage':   "Earthy and calm. I like it.",
+    'Lilac':  "Lilac season, always.",
+    'Black':  "Monochrome is my love language.",
+    'Gold':   "Going for gold — literally.",
+  },
+  swimSecondary: {
+    'White':  "Clean contrast. Approved.",
+    'Cream':  "Soft and easy on the eyes.",
+    'Blush':  "Very delicate pairing.",
+    'Red':    "Careful — don't go Christmas on me.",
+    'Cobalt': "Cobalt again? Commitment.",
+    'Navy':   "Deep and grounded.",
+    'Sage':   "A hint of green… watch the combo.",
+    'Lilac':  "Lilac trim — subtle and sweet.",
+    'Black':  "Black trims everything nicely.",
+    'Gold':   "Gold accent? Yes, always.",
+  },
+  glasses: {
+    'Black':    "Classic frames. Never wrong.",
+    'Tortoise': "Tortoise shell — very bookish chic.",
+    'Pink':     "Pink frames? Cute, I'll allow it.",
+    'Gold':     "Gold frames scream confidence.",
+    'Silver':   "Silver — cool and minimal.",
+    'White':    "White frames? Very avant-garde.",
+  },
+  lens: {
+    'Clear':  "Clear lenses — professional and polished.",
+    'Blush':  "Rose-tinted, literally. Cute.",
+    'Sky':    "Sky blue — I see the world differently.",
+    'Smoke':  "Smoky lenses — mysterious.",
+    'Black':  "Full blackout. Runway ready.",
+    'Mirror': "Mirror lenses — no one can read me.",
+  },
+  heels: {
+    'Black': "Black heels — the power move.",
+    'White': "White heels — bridal or just bold.",
+    'Nude':  "Nude heels make me look miles tall.",
+    'Red':   "Red heels! I feel like Dorothy.",
+    'Pink':  "Pink heels — princess energy.",
+    'Gold':  "Gold heels for the finale.",
+  },
+  brass: {
+    'Gold':      "Gold hardware — timeless luxury.",
+    'Rose Gold': "Rose gold is having a moment. Still.",
+    'Silver':    "Silver — cool and futuristic.",
+    'Bronze':    "Bronze gives vintage collector vibes.",
+    'Black':     "Matte black hardware — very edgy.",
+    'White':     "White hardware? Actually quite bold.",
+  },
+};
+
+
+/* ═══════════════════════════════════════
    🎄  丑色判断 + 对话框
    ═══════════════════════════════════════ */
 
@@ -391,20 +465,15 @@ function setFaceTexture(which) {
   });
 }
 
-// showDialogFor: 'hair' | 'swimsuit' — 只在触发来源匹配时弹对话框，避免重复弹出
+// 单色对话已由 buildSwatches 的 dialogMap 处理
+// 此函数仅负责：脸部贴图切换 + 组合色（圣诞配色）的专属对话
 function evaluateFaceState(showDialogFor) {
-  // 头发颜色优先级最高
-  if (currentHairColor === '#F472B6') {
+  // 头发颜色优先级最高 — 只换脸，不再弹对话（由 dialogMap 负责）
+  if (currentHairColor === '#F472B6' || currentHairColor === '#EF4444') {
     setFaceTexture('disgusted');
-    if (showDialogFor === 'hair') showDollDialog("You know what... I actually dislike barbie pink.");
     return;
   }
-  if (currentHairColor === '#EF4444') {
-    setFaceTexture('disgusted');
-    if (showDialogFor === 'hair') showDollDialog("This is too much.");
-    return;
-  }
-  // 泳衣撞色检测
+  // 泳衣撞色检测 — 这是组合判断，无法放进 dialogMap，保留在此
   const p = currentSwimColors.primary;
   const s = currentSwimColors.secondary;
   const isChristmas = (isReddish(p) && isGreenish(s)) || (isGreenish(p) && isReddish(s));
@@ -613,7 +682,7 @@ function isLight(hex) {
   return (r*.299 + g*.587 + b*.114) > 195;
 }
 
-function buildSwatches(id, palette, onChange, defaultIdx, dotId) {
+function buildSwatches(id, palette, onChange, defaultIdx, dotId, dialogMap) {
   const container = document.getElementById(id);
   if (!container) return;
   palette.forEach((color, i) => {
@@ -626,6 +695,7 @@ function buildSwatches(id, palette, onChange, defaultIdx, dotId) {
       container.querySelectorAll('.swatch').forEach(x => x.classList.remove('selected'));
       s.classList.add('selected');
       if (dotId) { const d = document.getElementById(dotId); if (d) d.style.background = color.hex; }
+      if (dialogMap && dialogMap[color.name]) showDollDialog(dialogMap[color.name]);
       onChange(color.hex);
     });
     container.appendChild(s);
@@ -636,13 +706,13 @@ function buildSwatches(id, palette, onChange, defaultIdx, dotId) {
   }
 }
 
-buildSwatches('hair-swatches',         PALETTES.hair,     (h) => { setColor('Hair.1001', h); currentHairColor = h; evaluateFaceState('hair'); }, DEFAULTS.hair, 'dot-hair');
-buildSwatches('sw-primary-swatches',   PALETTES.swimsuit, (h) => setSwimsuitPrimary(h),    DEFAULTS.swimPrimary,   'dot-sw-primary');
-buildSwatches('sw-secondary-swatches', PALETTES.swimsuit, (h) => setSwimsuitSecondary(h),  DEFAULTS.swimSecondary, 'dot-sw-secondary');
-buildSwatches('glasses-swatches',      PALETTES.glasses,  (h) => setColor('Glasses', h),   DEFAULTS.glasses,       'dot-glasses');
-buildSwatches('lens-swatches',         PALETTES.lens,     (h) => setColor('Lens', h),      DEFAULTS.lens,          'dot-lens');
-buildSwatches('heels-swatches',        PALETTES.heels,    (h) => setColor('Heels', h),     DEFAULTS.heels,         'dot-heels');
-buildSwatches('brass-swatches',        PALETTES.brass,    (h) => setColor('Brass', h),     DEFAULTS.brass,         'dot-brass');
+buildSwatches('hair-swatches',         PALETTES.hair,     (h) => { setColor('Hair.1001', h); currentHairColor = h; evaluateFaceState('hair'); }, DEFAULTS.hair,        'dot-hair',          DIALOGS.hair);
+buildSwatches('sw-primary-swatches',   PALETTES.swimsuit, (h) => setSwimsuitPrimary(h),                                                                      DEFAULTS.swimPrimary,  'dot-sw-primary',    DIALOGS.swimPrimary);
+buildSwatches('sw-secondary-swatches', PALETTES.swimsuit, (h) => setSwimsuitSecondary(h),                                                                     DEFAULTS.swimSecondary,'dot-sw-secondary',  DIALOGS.swimSecondary);
+buildSwatches('glasses-swatches',      PALETTES.glasses,  (h) => setColor('Glasses', h),                                                                      DEFAULTS.glasses,      'dot-glasses',       DIALOGS.glasses);
+buildSwatches('lens-swatches',         PALETTES.lens,     (h) => setColor('Lens', h),                                                                         DEFAULTS.lens,         'dot-lens',          DIALOGS.lens);
+buildSwatches('heels-swatches',        PALETTES.heels,    (h) => setColor('Heels', h),                                                                        DEFAULTS.heels,        'dot-heels',         DIALOGS.heels);
+buildSwatches('brass-swatches',        PALETTES.brass,    (h) => setColor('Brass', h),                                                                        DEFAULTS.brass,        'dot-brass',         DIALOGS.brass);
 
 
 /* ═══════════════════════════════════════
